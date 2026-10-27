@@ -297,27 +297,27 @@ enum InternalCommand {
 struct DeliveryResolver {
     channel_id: ChannelId,
     /// Kept together so that `into_parts` moves both out, leaving no placeholder poison behind.
-    parts: Option<(ErrorHolder, PromiseResolver<()>)>,
+    resolver_parts: Option<(ErrorHolder, PromiseResolver<()>)>,
 }
 
 impl DeliveryResolver {
     fn new(channel_id: ChannelId, poison: ErrorHolder, resolver: PromiseResolver<()>) -> Self {
         Self {
             channel_id,
-            parts: Some((poison, resolver)),
+            resolver_parts: Some((poison, resolver)),
         }
     }
 
     fn into_parts(mut self) -> (ErrorHolder, PromiseResolver<()>) {
-        self.parts
+        self.resolver_parts
             .take()
-            .expect("the parts are only taken by into_parts")
+            .expect("the resolver parts are only taken by into_parts")
     }
 }
 
 impl Drop for DeliveryResolver {
     fn drop(&mut self) {
-        if let Some((poison, resolver)) = self.parts.take() {
+        if let Some((poison, resolver)) = self.resolver_parts.take() {
             let error = poison
                 .check()
                 .err()
